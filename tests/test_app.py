@@ -1,5 +1,6 @@
 import http.client
 import json
+import sqlite3
 import tempfile
 import threading
 import unittest
@@ -58,6 +59,40 @@ class AppTests(unittest.TestCase):
             with self.subTest(text=repr(text)[:30]):
                 self.assertEqual(self.request("POST", "/api/tasks", {"text": text})[0], 400)
         self.assertEqual(before, TaskStore(self.path).list_tasks())
+
+    def test_schedule_edit_and_clear(self):
+        status, result = self.request("POST", "/api/tasks", {
+            "text": "Consulta", "notes": "Levar exames", "due_at": "2026-12-10T10:00:00-03:00"})
+        self.assertEqual(status, 201)
+        task = result["task"]
+        self.assertEqual(task["due_at"], "2026-12-10T13:00:00+00:00")
+        status, result = self.request("PATCH", f"/api/tasks/{task['id']}", {"text": "Consulta médica"})
+        self.assertEqual(status, 200)
+        self.assertEqual(result["task"]["notes"], "Levar exames")
+        self.assertEqual(result["task"]["due_at"], task["due_at"])
+        status, result = self.request("PATCH", f"/api/tasks/{task['id']}", {"due_at": None, "notes": ""})
+        self.assertEqual(status, 200)
+        self.assertIsNone(result["task"]["due_at"])
+        self.assertEqual(result["task"]["notes"], "")
+        for changes in ({"due_at": "2026-12-10T10:00:00"}, {"due_at": "inválida"}, {"due_at": 3},
+                        {"notes": None}, {"notes": "x" * 5001}, {"created_at": "x"}, {}):
+            self.assertEqual(self.request("PATCH", f"/api/tasks/{task['id']}", changes)[0], 400)
+        self.assertEqual(next(t for t in TaskStore(self.path).list_tasks() if t["id"] == task["id"]), result["task"])
+
+    def test_old_database_migrates_without_losing_tasks(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "old.sqlite3"
+            connection = sqlite3.connect(path)
+            connection.execute("CREATE TABLE tasks (id TEXT PRIMARY KEY, text TEXT NOT NULL, completed INTEGER NOT NULL, created_at TEXT NOT NULL)")
+            connection.execute("INSERT INTO tasks VALUES ('old', 'Manter tarefa antiga', 1, '2026-01-01')")
+            connection.commit()
+            connection.close()
+            for _ in range(2):
+                task = TaskStore(path).list_tasks()[0]
+                self.assertEqual(task["text"], "Manter tarefa antiga")
+                self.assertTrue(task["completed"])
+                self.assertEqual(task["notes"], "")
+                self.assertIsNone(task["due_at"])
 
     def test_invalid_completion_and_missing_task(self):
         self.assertEqual(self.request("PATCH", "/api/tasks/missing", {"completed": True})[0], 404)

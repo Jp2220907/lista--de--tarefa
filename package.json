@@ -1,0 +1,7 @@
+{
+  "name": "minha-lista-browser",
+  "private": true,
+  "scripts": {"build:client": "esbuild browser-entry.js --bundle --minify --format=iife --global-name=SupabaseBrowser --target=es2020 --outfile=static/vendor/supabase.js"},
+  "dependencies": {"@supabase/supabase-js": "2.119.0"},
+  "devDependencies": {"esbuild": "0.28.2"}
+}

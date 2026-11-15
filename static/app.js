@@ -10,6 +10,40 @@ const emptyDescription = document.querySelector("#empty-description");
 const errorMessage = document.querySelector("#error-message");
 const syncStatus = document.querySelector("#sync-status");
 const announcement = document.querySelector("#announcement");
+const dueInput = document.querySelector("#new-due");
+const notesInput = document.querySelector("#new-notes");
+const search = document.querySelector("#search");
+const dialog = document.querySelector("#edit-dialog");
+const editText = document.querySelector("#edit-text");
+const editDue = document.querySelector("#edit-due");
+const editNotes = document.querySelector("#edit-notes");
+const editError = document.querySelector("#edit-error");
+let filter = "all";
+let editingId = null;
+let editSaving = false;
+
+function toISO(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) throw new Error("Confira a data e a hora informadas.");
+  return date.toISOString();
+}
+
+function toLocalInput(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  const pad = (number) => String(number).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function visibleTask(task) {
+  const query = search.value.trim().toLocaleLowerCase("pt-BR");
+  if (!`${task.text} ${task.notes || ""}`.toLocaleLowerCase("pt-BR").includes(query)) return false;
+  if (filter === "pending") return !task.completed;
+  if (filter === "completed") return task.completed;
+  if (filter === "today") return task.due_at && new Date(task.due_at).toDateString() === new Date().toDateString();
+  return true;
+}
 
 let tasks = [];
 let loaded = false;
@@ -17,6 +51,64 @@ let refreshPending = false;
 let requestQueue = Promise.resolve();
 const rows = new Map();
 const saving = new Set();
+let agendaSignature = "";
+
+function setText(selector, value) {
+  const element = document.querySelector(selector);
+  if (element.textContent !== String(value)) element.textContent = value;
+}
+
+function updateOverview() {
+  const now = new Date();
+  const completed = tasks.filter((task) => task.completed).length;
+  const today = tasks.filter((task) => task.due_at && new Date(task.due_at).toDateString() === now.toDateString()).length;
+  const counts = { all: tasks.length, today, pending: tasks.length - completed, completed };
+  document.querySelectorAll("[data-count]").forEach((element) => {
+    element.textContent = counts[element.dataset.count];
+  });
+  setText("#stat-pending", counts.pending);
+  setText("#stat-today", today);
+  setText("#stat-completed", completed);
+  setText("#visible-count", tasks.filter(visibleTask).length);
+  const percent = tasks.length ? Math.round(completed / tasks.length * 100) : 0;
+  setText("#progress-value", `${percent}%`);
+  document.querySelector("#progress-ring").setAttribute("stroke-dashoffset", String(320.442 * (1 - percent / 100)));
+  setText("#progress-description", tasks.length ? `${completed} de ${tasks.length} ${tasks.length === 1 ? "tarefa concluída" : "tarefas concluídas"}.` : "Adicione uma tarefa para começar.");
+  const date = document.querySelector("#current-date");
+  date.textContent = now.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "long" });
+  date.dateTime = toLocalInput(now.toISOString()).split("T")[0];
+  const upcoming = tasks.filter((task) => !task.completed && task.due_at && new Date(task.due_at) >= now)
+    .sort((a, b) => new Date(a.due_at) - new Date(b.due_at)).slice(0, 3);
+  const signature = JSON.stringify(upcoming);
+  document.querySelector("#upcoming-empty").hidden = upcoming.length > 0;
+  if (signature !== agendaSignature) {
+    agendaSignature = signature;
+    const agenda = document.querySelector("#upcoming-list");
+    agenda.replaceChildren();
+    upcoming.forEach((task) => {
+      const date = new Date(task.due_at);
+      const item = document.createElement("li");
+      const badge = document.createElement("span");
+      badge.className = "agenda-date";
+      const month = document.createElement("span");
+      month.textContent = date.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
+      const day = document.createElement("strong");
+      day.textContent = date.getDate();
+      badge.append(month, day);
+      const copy = document.createElement("div");
+      copy.className = "agenda-copy";
+      const title = document.createElement("p");
+      title.textContent = task.text;
+      const time = document.createElement("time");
+      time.dateTime = task.due_at;
+      time.textContent = date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      time.title = date.toLocaleString("pt-BR");
+      copy.append(title, time);
+      item.append(badge, copy);
+      agenda.append(item);
+    });
+  }
+}
 
 // Serialize reads and writes so an older poll cannot overwrite a new action.
 function enqueue(operation) {
@@ -26,31 +118,7 @@ function enqueue(operation) {
 }
 
 async function request(path, options = {}) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-  try {
-    const response = await fetch(path, {
-      ...options,
-      headers: { "Content-Type": "application/json", ...options.headers },
-      cache: "no-store",
-      signal: controller.signal,
-    });
-    let data;
-    try {
-      data = await response.json();
-    } catch {
-      throw new Error("Não foi possível ler a resposta. Tente novamente.");
-    }
-    if (!response.ok) throw new Error(data.error || "Não foi possível salvar a alteração.");
-    return data;
-  } catch (error) {
-    if (error.name === "AbortError" || error instanceof TypeError) {
-      throw new Error("Não foi possível conectar. Confira se o aplicativo está aberto e tente novamente.");
-    }
-    throw error;
-  } finally {
-    clearTimeout(timeout);
-  }
+  return window.TaskConnection.request(path, options);
 }
 
 function showError(error) {
@@ -86,7 +154,19 @@ function render() {
       const text = document.createElement("span");
       text.className = "task-text";
       label.append(checkbox, text);
-      row.append(label);
+      const edit = document.createElement("button");
+      edit.type = "button";
+      edit.className = "edit-button";
+      edit.textContent = "Editar";
+      edit.addEventListener("click", () => openEdit(task.id));
+      const meta = document.createElement("div");
+      meta.className = "task-meta";
+      const due = document.createElement("p");
+      due.className = "task-due";
+      const notes = document.createElement("p");
+      notes.className = "task-notes";
+      meta.append(due, notes);
+      row.append(label, edit, meta);
       rows.set(task.id, row);
     }
     const checkbox = row.querySelector("input");
@@ -96,6 +176,16 @@ function render() {
     checkbox.disabled = saving.has(task.id);
     row.classList.toggle("is-completed", task.completed);
     row.classList.toggle("is-saving", saving.has(task.id));
+    row.hidden = !visibleTask(task);
+    row.querySelector(".edit-button").setAttribute("aria-label", `Editar: ${task.text}`);
+    const due = row.querySelector(".task-due");
+    const overdue = task.due_at && !task.completed && new Date(task.due_at) < new Date();
+    due.hidden = !task.due_at;
+    due.textContent = task.due_at ? `${overdue ? "Atrasada · " : ""}${new Date(task.due_at).toLocaleString("pt-BR", {dateStyle: "short", timeStyle: "short"})}` : "";
+    due.classList.toggle("overdue", Boolean(overdue));
+    const notes = row.querySelector(".task-notes");
+    notes.hidden = !task.notes;
+    notes.textContent = task.notes || "";
     // Leave existing nodes in place on unchanged polls, preserving keyboard focus.
     if (list.children[index] !== row) list.insertBefore(row, list.children[index] || null);
   });
@@ -104,12 +194,17 @@ function render() {
   const pending = tasks.length - completed;
   document.querySelector("#pending-count").textContent = `${pending} ${pending === 1 ? "pendente" : "pendentes"}`;
   document.querySelector("#completed-count").textContent = `${completed} ${completed === 1 ? "concluída" : "concluídas"}`;
-  emptyState.hidden = tasks.length > 0;
+  emptyState.hidden = tasks.some(visibleTask);
+  if (loaded && tasks.length > 0 && !tasks.some(visibleTask)) {
+    emptyTitle.textContent = "Nenhuma tarefa por aqui";
+    emptyDescription.textContent = "Experimente outra busca ou escolha outro filtro.";
+  }
   if (loaded && tasks.length === 0) {
     emptyTitle.textContent = "Um espaço livre para começar";
     emptyDescription.textContent = "Adicione sua primeira tarefa no campo acima.";
   }
   list.setAttribute("aria-busy", String(!loaded));
+  updateOverview();
 }
 
 async function refresh() {
@@ -172,16 +267,23 @@ form.addEventListener("submit", async (event) => {
   }
   addButton.disabled = true;
   input.readOnly = true;
+  dueInput.disabled = true;
+  notesInput.readOnly = true;
   clearError();
   try {
     await enqueue(async () => {
       const data = await request("/api/tasks", {
         method: "POST",
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, notes: notesInput.value, due_at: toISO(dueInput.value) }),
       });
       tasks.push(data.task);
       loaded = true;
       input.value = "";
+      dueInput.value = "";
+      notesInput.value = "";
+      filter = "all";
+      search.value = "";
+      updateFilters();
       render();
       announcement.textContent = "Tarefa adicionada.";
     });
@@ -190,11 +292,105 @@ form.addEventListener("submit", async (event) => {
   } finally {
     addButton.disabled = false;
     input.readOnly = false;
+    dueInput.disabled = false;
+    notesInput.readOnly = false;
     input.focus();
   }
 });
 
-refresh();
+function updateFilters() {
+  document.querySelectorAll("[data-filter]").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.filter === filter));
+  });
+  const views = {
+    all: ["Minhas tarefas", "Todas as tarefas", "Um lugar para organizar o dia e tirar as ideias do papel."],
+    today: ["Meu dia", "Hoje", "Tudo o que tem data marcada para hoje, em um só lugar."],
+    pending: ["Para fazer", "Pendentes", "Uma tarefa de cada vez. Você escolhe o próximo passo."],
+    completed: ["Concluídas", "Concluídas", "Olhe para tudo o que você já tirou do caminho."],
+  };
+  const [title, breadcrumb, subtitle] = views[filter];
+  const heading = document.querySelector("#page-title");
+  heading.textContent = title;
+  const dot = document.createElement("span");
+  dot.textContent = ".";
+  heading.append(dot);
+  setText("#view-name", breadcrumb);
+  setText("#page-subtitle", subtitle);
+}
+
+document.querySelector("#focus-composer").addEventListener("click", () => {
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.querySelector(".composer").scrollIntoView({ behavior: reducedMotion ? "instant" : "smooth", block: "center" });
+  input.focus({ preventScroll: true });
+});
+
+search.addEventListener("input", render);
+document.querySelectorAll("[data-filter]").forEach((button) => {
+  button.addEventListener("click", () => {
+    filter = button.dataset.filter;
+    updateFilters();
+    render();
+  });
+});
+
+function openEdit(id) {
+  const task = tasks.find((item) => item.id === id);
+  if (!task) return;
+  editingId = id;
+  editText.value = task.text;
+  editNotes.value = task.notes || "";
+  editDue.value = toLocalInput(task.due_at);
+  editError.hidden = true;
+  dialog.showModal();
+  editText.focus();
+}
+
+document.querySelector("#cancel-edit").addEventListener("click", () => dialog.close());
+dialog.addEventListener("cancel", (event) => { if (editSaving) event.preventDefault(); });
+document.querySelector("#edit-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (editSaving) return;
+  editSaving = true;
+  const controls = [...dialog.querySelectorAll("input, textarea, button")];
+  controls.forEach((control) => { control.disabled = true; });
+  editError.hidden = true;
+  try {
+    const body = { text: editText.value.trim(), notes: editNotes.value, due_at: toISO(editDue.value) };
+    await enqueue(async () => {
+      const data = await request(`/api/tasks/${encodeURIComponent(editingId)}`, { method: "PATCH", body: JSON.stringify(body) });
+      tasks = tasks.map((task) => task.id === editingId ? data.task : task);
+      render();
+    });
+    dialog.close();
+    announcement.textContent = "Alterações salvas.";
+  } catch (error) {
+    editError.textContent = error.message;
+    editError.hidden = false;
+  } finally {
+    editSaving = false;
+    controls.forEach((control) => { control.disabled = false; });
+  }
+});
+
+window.listActions = {
+  run: enqueue,
+  refresh,
+};
+window.addEventListener("task-account-changed", () => {
+  // Limpa a lista anterior antes de carregar dados de outra conta/fonte.
+  tasks = [];
+  loaded = false;
+  search.value = "";
+  filter = "all";
+  updateFilters();
+  emptyTitle.textContent = "Carregando suas tarefas…";
+  emptyDescription.textContent = "Só um instante.";
+  clearError();
+  if (dialog.open) dialog.close();
+  render();
+  enqueue(async () => {}).then(refresh);
+});
+window.TaskConnection.ready.then(refresh).catch(showError);
 setInterval(() => {
   if (!document.hidden) refresh();
 }, 3000);

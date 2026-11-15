@@ -2,7 +2,7 @@
 
 from mcp.server.fastmcp import FastMCP
 
-from store import TaskStore
+from cloud import SharedTasks
 
 
 mcp = FastMCP(
@@ -14,19 +14,35 @@ mcp = FastMCP(
         "ou reabrir uma tarefa."
     ),
 )
-store = TaskStore()
+store = SharedTasks()
 
 
 @mcp.tool()
 def listar_tarefas() -> dict:
     """Liste as tarefas, seus identificadores e seus estados de conclusão."""
-    return {"tarefas": store.list_tasks()}
+    return {"tarefas": store.list_tasks(), "origem": store.account.status()["mode"]}
 
 
 @mcp.tool()
-def adicionar_tarefa(texto: str) -> dict:
-    """Adicione uma tarefa de 1 a 500 caracteres e retorne o registro criado."""
-    return store.add_task(texto)
+def adicionar_tarefa(texto: str, notas: str = "", data_hora: str | None = None) -> dict:
+    """Adicione uma tarefa. Data opcional em ISO 8601 com fuso; notas até 5000 caracteres."""
+    return store.add_task(texto, notas, data_hora)
+
+
+@mcp.tool()
+def editar_tarefa(tarefa_id: str, texto: str | None = None, notas: str | None = None,
+                  data_hora: str | None = None, remover_data: bool = False) -> dict:
+    """Edite só os campos informados. Data em ISO 8601 com fuso; remover_data limpa a data."""
+    if remover_data and data_hora is not None:
+        raise ValueError("Escolha entre definir uma data ou removê-la.")
+    changes = {}
+    if texto is not None:
+        changes["text"] = texto
+    if notas is not None:
+        changes["notes"] = notas
+    if data_hora is not None or remover_data:
+        changes["due_at"] = None if remover_data else data_hora
+    return store.update_task(tarefa_id, changes)
 
 
 @mcp.tool()

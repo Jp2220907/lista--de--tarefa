@@ -43,9 +43,9 @@ class MCPIntegrationTests(unittest.IsolatedAsyncioTestCase):
             tools = await client.list_tools()
             self.assertEqual(
                 {tool.name for tool in tools.tools},
-                {"listar_tarefas", "adicionar_tarefa", "concluir_tarefa"},
+                {"listar_tarefas", "adicionar_tarefa", "concluir_tarefa", "editar_tarefa"},
             )
-            self.assertEqual(await self.call(client, "listar_tarefas"), {"tarefas": []})
+            self.assertEqual(await self.call(client, "listar_tarefas"), {"tarefas": [], "origem": "local"})
             task = await self.call(
                 client, "adicionar_tarefa", {"texto": "  Testar integração com Hermes  "}
             )
@@ -92,6 +92,23 @@ class MCPIntegrationTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(result.isError)
             listing = await self.call(client, "listar_tarefas")
             self.assertEqual(listing["tarefas"], [task])
+
+    async def test_schedule_and_notes_are_available_to_hermes(self):
+        async with self.session() as client:
+            task = await self.call(client, "adicionar_tarefa", {
+                "texto": "Reunião", "notas": "Revisar projeto", "data_hora": "2026-12-01T09:00:00-03:00"})
+            self.assertEqual(task["due_at"], "2026-12-01T12:00:00+00:00")
+            edited = await self.call(client, "editar_tarefa", {
+                "tarefa_id": task["id"], "texto": "Reunião do projeto", "notas": "Novo detalhe"})
+            self.assertEqual(edited["due_at"], task["due_at"])
+            self.assertEqual(edited["notes"], "Novo detalhe")
+            cleared = await self.call(client, "editar_tarefa", {
+                "tarefa_id": task["id"], "remover_data": True})
+            self.assertIsNone(cleared["due_at"])
+            result = await client.call_tool("editar_tarefa", {
+                "tarefa_id": task["id"], "remover_data": True, "data_hora": "2026-12-01T12:00:00Z"})
+            self.assertTrue(result.isError)
+            self.assertEqual((await self.call(client, "listar_tarefas"))["tarefas"], [cleared])
 
 
 if __name__ == "__main__":

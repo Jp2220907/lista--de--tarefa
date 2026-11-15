@@ -1,0 +1,15 @@
+.git/
+.venv/
+.data/
+node_modules/
+__pycache__/
+**/__pycache__/
+.env
+.env.*
+*.sqlite3
+*.sqlite3-*
+*.supabase-session.json
+*.supabase-session.lock
+.session-*.tmp
+CONTINUAR_NO_HERMES.md
+ATUALIZAR_COM_HERMES.txt

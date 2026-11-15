@@ -1,0 +1,5 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Content-Security-Policy: default-src 'self'; connect-src 'self' https://lwshxdiwypkwdabpsqzc.supabase.co wss://lwshxdiwypkwdabpsqzc.supabase.co; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'
+  Cache-Control: no-cache

@@ -1,0 +1,46 @@
+CONTINUAR A LISTA: CADASTRO, LOGIN E NUVEM
+
+Responda em português e leia primeiro supabase/LOGIN_E_SINCRONIZACAO.md.
+O pacote implementa a próxima etapa, mas não foi aplicado neste Windows.
+
+1. Inspecione a pasta conectada à lista_tarefas e os arquivos reais. Guarde o
+   inventário das tarefas locais existentes. Não refaça a instalação do Hermes,
+   seu login ChatGPT, o SQL inicial já executado, ou a configuração de e-mail já
+   confirmada. Se a versão instalada divergir do pacote, investigue antes de copiar.
+2. Confirme com o usuário se a chave secreta exposta anteriormente foi revogada.
+   Não peça nem exiba seu valor, senhas, tokens ou arquivos de sessão. O pacote
+   inclui apenas a chave publicável do projeto.
+3. Mantenha a mesma pasta de instalação. Pare só o servidor desta lista e
+   descarregue temporariamente apenas seu MCP, preservando a configuração.
+   Use atualizar.py DA PASTA NOVA: primeiro previsão e depois --aplicar, com
+   --destino apontando para a pasta antiga. O Python é o .venv da pasta antiga.
+   O atualizador faz backup e não substitui o banco, .venv ou a sessão existente.
+   Se houver TASKS_DB_PATH externo, faça backup consistente desse banco também.
+4. Na pasta antiga execute testes com .venv/Scripts/python.exe:
+   -m unittest discover -s tests -v
+   A versão atual tem 21 testes. Não altere testes para fazê-los passar. Nesses
+   testes, Supabase é simulado por um serviço HTTP local; não declarar nuvem real
+   validada só porque passaram.
+5. Reinicie o servidor no loopback e recarregue lista_tarefas. Confira a página e
+   as tarefas locais pelo MCP. O aplicativo funciona no modo local sem login.
+6. Ajude o usuário a conferir URL Configuration do Supabase: para teste local,
+   Site URL e Redirect URLs devem incluir http://127.0.0.1:8765/ (ou porta real).
+   Não desative Confirm email, RLS ou privilégios de colunas para contornar erros.
+7. Peça que o usuário use a página para Criar conta, confirme o e-mail recebido e
+   depois entre. Ele digita a senha no formulário: não solicite senha na conversa.
+8. Depois de entrar, conferir que a interface indica Nuvem e a conta correta.
+   As tarefas locais não são enviadas automaticamente. O próprio usuário deve
+   escolher e confirmar Enviar tarefas locais para minha conta, se desejar.
+   Não automatize esse clique nem essa confirmação: é a escolha do destino real.
+9. Com a nuvem ativa, testar listar_tarefas (origem cloud) e criação/edição somente
+   em tarefa fictícia pelo MCP. Conferir UI. Testar sair e entrar preservando os
+   originais locais, e que repetir a importação não sobrescreve tarefas remotas.
+10. Para iPhone, preparar hospedagem estática HTTPS com o ZIP Site-minha-lista.
+    A publicação exige escolha/autorização do usuário. Não hospedar Python/.data,
+    não abrir porta local para internet e não usar chaves administrativas.
+    A URL HTTPS deve ser cadastrada em Redirect URLs. Depois validar no iPhone
+    e em outra conta que o RLS impede ler/alterar tarefas da primeira conta.
+11. Relatar passos executados, resultados reais, confirmações visuais e pendências.
+    Não afirmar sincronização validada enquanto o projeto real e dois dispositivos
+    não forem testados. Internet é necessária para tarefas na nuvem; offline completo,
+    notificações, calendário visual e Apple/Obsidian continuam para próximas etapas.
