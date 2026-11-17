@@ -152,7 +152,21 @@ dialog .error-message { margin-top: 16px; }
   .list-header { padding: 20px 16px 16px; }.list-hint { font-size: 9px; }.list-tools { padding: 0 16px 16px; }#search { font-size: 16px; padding-top: 9px; padding-bottom: 9px; }.search-box > svg { top: 14px; }
   .task-label { padding: 19px 5px 15px 16px; gap: 10px; }.task-text { font-size: 13px; }.task-checkbox { width: 22px; height: 22px; flex-basis: 22px; border-radius: 7px; }.edit-button { margin: 12px 8px 0 0; min-height: 40px; padding: 10px 7px; font-size: 11px; }.task-meta { padding: 0 16px 0 48px; }.task-due { font-size: 10px; }.task-notes { font-size: 12px; }.list-footer { padding: 14px 16px; flex-wrap: wrap; font-size: 9px; }
   .right-rail { gap: 13px; }.progress-card { padding: 20px 12px 15px; }.agenda-card { padding: 20px 13px; }.agenda-heading { align-items: flex-start; gap: 5px; }.agenda-heading h2 { line-height: 1.5; font-size: 11px; }.progress-bottom { line-height: 1.7; }.progress-card h2 { font-size: 13px; }.progress-ring { width: 105px; height: 105px; }#progress-description { font-size: 10px; }
-  .page-footer { font-size: 8px; }dialog { padding: 24px 20px; }dialog input, dialog textarea, .detail-fields input, .detail-fields textarea { font-size: 16px; }
+  .page-footer { font-size: 8px; }
+  dialog {
+    padding: 24px 20px;
+    width: calc(100% - 32px);
+    max-width: 480px;
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+  /* Match the base input selector's specificity so iOS does not zoom on focus. */
+  dialog input:not([type="checkbox"]), dialog textarea,
+  .detail-fields input:not([type="checkbox"]), .detail-fields textarea { font-size: 16px; }
+  dialog input[type="datetime-local"] { display: block; max-width: 100%; }
+  dialog .dialog-actions button { min-height: 44px; }
 }
 @media (max-width: 370px) { .right-rail { grid-template-columns: 1fr; }.list-hint { display: none; }.workspace { padding-left: 15px; padding-right: 15px; }.filters button { padding-left: 7px; padding-right: 7px; }.filters svg { display: none; }.page-footer span:last-child { display: none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
