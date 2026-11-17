@@ -3,6 +3,7 @@
 __pycache__/
 *.py[cod]
 node_modules/
+.notifications-local/
 *.supabase-session.json
 *.supabase-session.lock
 .session-*.tmp

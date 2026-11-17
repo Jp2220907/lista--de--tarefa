@@ -1,7 +1,17 @@
 {
   "name": "minha-lista-browser",
   "private": true,
-  "scripts": {"build:client": "esbuild browser-entry.js --bundle --minify --format=iife --global-name=SupabaseBrowser --target=es2020 --outfile=static/vendor/supabase.js"},
-  "dependencies": {"@supabase/supabase-js": "2.119.0"},
-  "devDependencies": {"esbuild": "0.28.2"}
+  "scripts": {
+    "notifications:keys": "node scripts/notification-keys.mjs",
+    "test:notifications": "node --test tests/push-worker.test.mjs tests/notification-sql.test.mjs",
+    "build:client": "esbuild browser-entry.js --bundle --minify --format=iife --global-name=SupabaseBrowser --target=es2020 --outfile=static/vendor/supabase.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.119.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.16",
+    "esbuild": "0.28.2",
+    "web-push": "3.6.7"
+  }
 }

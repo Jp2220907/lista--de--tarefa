@@ -186,3 +186,45 @@ dialog .error-message { margin-top: 16px; }
 #back-to-login.primary-button { color: white; text-decoration: none; }
 #recovery-error { margin: 20px 0 0; }
 @media (max-width: 600px) { .recovery-page { padding: 24px 16px; }.recovery-card { padding: 28px 22px; } }
+
+.calendar-panel { background: white; border: 1px solid var(--line); border-radius: 14px; padding: 24px; margin-bottom: 25px; }
+.calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.calendar-header .eyebrow { margin-bottom: 7px; }
+.calendar-header h2 { font-size: 18px; }
+.calendar-header button, .calendar-day-view > button { border: 1px solid #dce6df; border-radius: 7px; background: #f9fbf8; color: var(--green); padding: 9px 12px; font-size: 12px; }
+.calendar-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(200px, 1fr); gap: 28px; }
+.calendar-navigation { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 13px; }
+.calendar-navigation h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.calendar-navigation button { min-width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--green); font-size: 23px; }
+.calendar-weekdays, .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+.calendar-weekdays { text-align: center; font-size: 11px; color: #728277; margin-bottom: 7px; }
+.calendar-day { position: relative; border: 1px solid transparent; border-radius: 8px; min-height: 46px; color: #345541; background: #f8faf7; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 13px; }
+.calendar-day:hover { background: #eaf3e9; }
+.calendar-day.outside-month { background: white; color: #9aa59d; }
+.calendar-day[aria-current="date"] { border-color: #82a38e; font-weight: 700; }
+.calendar-day[aria-pressed="true"] { background: var(--green); color: white; border-color: var(--green); }
+.calendar-day-count { font-size: 8px; background: #dcebdc; border-radius: 50%; min-width: 13px; height: 13px; line-height: 13px; text-align: center; color: #286a54; }
+.calendar-day[aria-pressed="true"] .calendar-day-count { background: white; }
+.calendar-legend { color: #7a8b7f; font-size: 10px; margin: 12px 0 0; line-height: 1.6; }
+.calendar-day-view { border-left: 1px solid var(--line); padding-left: 24px; min-width: 0; }
+#calendar-selected-title { font-size: 14px; line-height: 1.7; text-transform: capitalize; margin: 3px 0 15px; }
+#calendar-agenda { padding: 0; margin: 0; list-style: none; max-height: 260px; overflow-y: auto; }
+.calendar-task { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 5px 9px; width: 100%; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left; padding: 13px 3px; color: #345541; }
+.calendar-task:hover { background: #f5f8f3; }
+.calendar-task time { font-size: 11px; color: #66846f; padding-top: 2px; }
+.calendar-task > span { overflow-wrap: anywhere; font-size: 13px; line-height: 1.6; }
+.calendar-task small { grid-column: 2; font-size: 10px; color: #7b8b7c; }
+.calendar-task.completed > span { text-decoration: line-through; color: #859585; }
+#calendar-no-tasks { color: #7b8b7c; font-size: 12px; line-height: 1.8; margin: 20px 0; }
+.calendar-day-view > button { margin: 16px 5px 0 0; }
+@media (max-width: 760px) {
+  .calendar-panel { padding: 20px 16px; }
+  .calendar-layout { grid-template-columns: 1fr; gap: 18px; }
+  .calendar-day-view { border-left: 0; border-top: 1px solid var(--line); padding: 18px 0 0; }
+  .calendar-day { min-height: 43px; }
+  .calendar-weekdays, .calendar-grid { gap: 4px; }
+}
+
+#notification-button, #check-notifications, #disable-notifications, #close-notifications { border: 1px solid #dce6df; border-radius: 7px; padding: 9px 12px; background: #fff; color: var(--green); font-size: 12px; }
+#notification-status { padding: 13px; background: #f0f5ed; border-radius: 8px; font-size: 13px; line-height: 1.8; }
+@media (max-width: 480px) { .topbar .breadcrumb { display: none; }.topbar { justify-content: flex-end; } }

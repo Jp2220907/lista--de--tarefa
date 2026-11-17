@@ -1,0 +1,4 @@
+project_id = "minha-lista"
+
+[functions.task-reminders]
+verify_jwt = false

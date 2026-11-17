@@ -7,6 +7,8 @@ window.TaskConnection = (() => {
   let state = { mode: desktop ? "local" : "signed-out", context: desktop ? "local" : "signed-out", email: "", local_count: 0, desktop };
   let client;
   const listeners = new Set();
+  const accountChangeHooks = new Set();
+  async function beforeAccountChange() { for (const callback of accountChangeHooks) await callback(); }
 
   function publish(next, deferred = false) {
     const oldContext = state.context;
@@ -118,6 +120,7 @@ window.TaskConnection = (() => {
 
   async function login(email, password) {
     await ready;
+    await beforeAccountChange();
     if (desktop) return publish(await raw("/api/account/login", { method: "POST", body: JSON.stringify({ email, password }) }));
     const { data, error } = await client.auth.signInWithPassword({ email, password });
     if (error) throw sdkError(error);
@@ -142,6 +145,7 @@ window.TaskConnection = (() => {
 
   async function logout() {
     await ready;
+    await beforeAccountChange();
     if (desktop) return publish(await raw("/api/account/logout", { method: "POST", body: "{}" }));
     const { error } = await client.auth.signOut({ scope: "local" });
     if (error) throw sdkError(error);
@@ -153,6 +157,38 @@ window.TaskConnection = (() => {
     return raw("/api/account/import", { method: "POST", body: "{}" });
   }
 
+  async function notificationConfig() {
+    await ready;
+    if (desktop || state.mode !== 'cloud') throw new Error('Abra o app publicado e entre na conta para ativar avisos neste aparelho.');
+    const { data, error } = await client.functions.invoke('task-reminders', { method: 'GET' });
+    if (error || !data?.publicKey) throw new Error('O serviço de notificações ainda precisa ser ativado no Supabase.');
+    return data;
+  }
+  async function savePushSubscription(subscription, expectedUser) {
+    await ready;
+    if (desktop || state.mode !== 'cloud' || state.user_id !== expectedUser) throw new Error('A conta mudou. Ative os avisos novamente na conta desejada.');
+    const { data, error } = await client.from('task_push_subscriptions').upsert({ user_id: expectedUser,
+      endpoint: subscription.endpoint, p256dh: subscription.keys.p256dh, auth: subscription.keys.auth,
+    }, { onConflict: 'user_id,endpoint' }).select('id').single();
+    if (error) throw new Error('Não foi possível registrar os avisos. Confira a configuração de notificações do Supabase.');
+    return data;
+  }
+  async function findPushSubscription(endpoint) {
+    await ready;
+    if (desktop || state.mode !== 'cloud') return null;
+    const { data, error } = await client.from('task_push_subscriptions').select('id').eq('endpoint', endpoint).eq('user_id', state.user_id).maybeSingle();
+    if (error) throw new Error('Não foi possível conferir os avisos deste aparelho.');
+    return data;
+  }
+  async function removePushSubscription(endpoint, userId) {
+    await ready;
+    if (desktop || state.mode !== 'cloud' || state.user_id !== userId) return;
+    const { error } = await client.from('task_push_subscriptions').delete().eq('endpoint', endpoint).eq('user_id', userId);
+    if (error) throw new Error('Não foi possível remover o registro remoto dos avisos.');
+  }
+
   return { ready, request, login, signup, recoverPassword, logout, importLocal, refreshAccount,
+    notificationConfig, savePushSubscription, findPushSubscription, removePushSubscription,
+    beforeAccountChange(callback) { accountChangeHooks.add(callback); return () => accountChangeHooks.delete(callback); },
     get state() { return state; }, subscribe(callback) { listeners.add(callback); return () => listeners.delete(callback); } };
 })();

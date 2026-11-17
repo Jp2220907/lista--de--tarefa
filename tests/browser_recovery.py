@@ -61,7 +61,7 @@ def run():
                         if request.method == 'OPTIONS':
                             return handler.fulfill(status=204, headers={**cors, 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,OPTIONS'})
                         req = urllib.request.Request(remote.url + url.path + ('?' + url.query if url.query else ''), method=request.method,
-                            data=request.post_data_buffer, headers={key: value for key, value in request.headers.items() if key in ('apikey', 'authorization', 'content-type', 'prefer')})
+                            data=request.post_data_buffer, headers={key: value for key, value in request.headers.items() if key in ('apikey', 'authorization', 'content-type', 'prefer', 'accept')})
                         try:
                             with urllib.request.urlopen(req, timeout=15) as response: status = response.status; body = response.read()
                         except urllib.error.HTTPError as error: status = error.code; body = error.read()

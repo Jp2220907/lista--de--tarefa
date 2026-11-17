@@ -25,6 +25,8 @@ class SupabaseFixture:
         self.recoveries = []
         self.refreshes = {}
         self.rows = {}
+        self.push_rows = {}
+        self.push_ready = False
         self.fail = False
         self.refresh_count = 0
         self.guard = threading.Lock()
@@ -94,6 +96,28 @@ class SupabaseFixture:
                     if parsed.path == '/auth/v1/logout':
                         owner.tokens.pop(token, None)
                         return self.reply(204, None)
+                    if parsed.path == '/functions/v1/task-reminders':
+                        return self.reply(200, {'ready': owner.push_ready, 'publicKey': 'A' * 87})
+                    if parsed.path == '/rest/v1/task_push_subscriptions':
+                        if self.command == 'POST':
+                            if body.get('user_id') != user['id']:
+                                return self.reply(403, {'code': '42501'})
+                            key = (user['id'], body['endpoint'])
+                            row = {'id': owner.push_rows.get(key, {}).get('id', str(uuid4())), **body}
+                            owner.push_rows[key] = row
+                            result = [row]
+                        else:
+                            result = [row for row in owner.push_rows.values() if row['user_id'] == user['id']]
+                            for field in ('endpoint', 'user_id'):
+                                if field in query:
+                                    result = [row for row in result if row[field] == query[field][0].removeprefix('eq.')]
+                            if self.command == 'DELETE':
+                                for row in result: owner.push_rows.pop((row['user_id'], row['endpoint']))
+                        keys = query.get('select', ['id'])[0].split(',')
+                        result = [{key: row[key] for key in keys} for row in result]
+                        if 'vnd.pgrst.object' in self.headers.get('Accept', ''):
+                            return self.reply(200, result[0]) if len(result) == 1 else self.reply(406, {'code': 'PGRST116'})
+                        return self.reply(200, result)
                     if parsed.path != '/rest/v1/tasks':
                         return self.reply(404, {'code': 'not_found'})
                     allowed = {'id', 'text', 'notes', 'completed', 'due_at', 'created_at'} if self.command == 'POST' else {'text', 'notes', 'completed', 'due_at'}
@@ -117,12 +141,16 @@ class SupabaseFixture:
                         offset = int(query.get('offset', ['0'])[0]); limit = int(query.get('limit', ['1000'])[0])
                         result = sorted(result, key=lambda row: (row['created_at'], row['id']))[offset:offset+limit]
                     keys = query.get('select', ['id,text,notes,completed,due_at,created_at'])[0].split(',')
-                    return self.reply(200, [{key: row[key] for key in keys} for row in result])
+                    result = [{key: row[key] for key in keys} for row in result]
+                    if 'vnd.pgrst.object' in self.headers.get('Accept', ''):
+                        return self.reply(200, result[0]) if len(result) == 1 else self.reply(406, {'code': 'PGRST116'})
+                    return self.reply(200, result)
 
             do_GET = dispatch
             do_POST = dispatch
             do_PATCH = dispatch
             do_PUT = dispatch
+            do_DELETE = dispatch
 
         self.server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
         self.url = 'http://127.0.0.1:' + str(self.server.server_port)

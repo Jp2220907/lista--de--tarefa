@@ -21,6 +21,26 @@ const editError = document.querySelector("#edit-error");
 let filter = "all";
 let editingId = null;
 let editSaving = false;
+const notificationTaskPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+let notificationTask = new URL(location.href).searchParams.get('task');
+if (!notificationTaskPattern.test(notificationTask || '')) notificationTask = null;
+function revealNotificationTask() {
+  if (!notificationTask || !loaded) return;
+  const id = notificationTask;
+  notificationTask = null;
+  const url = new URL(location.href); url.searchParams.delete('task');
+  history.replaceState(null, '', url.pathname + url.search);
+  const task = tasks.find((item) => item.id === id);
+  if (!task) { showError(new Error('A tarefa deste aviso não está disponível na conta atual.')); return; }
+  search.value = ''; filter = 'all'; updateFilters();
+  if (task.due_at) window.TaskCalendar.select(window.TaskCalendar.key(new Date(task.due_at)));
+  render(); openEdit(task.id);
+}
+navigator.serviceWorker?.addEventListener('message', (event) => {
+  if (event.data?.type !== 'OPEN_TASK' || !notificationTaskPattern.test(event.data.taskId || '')) return;
+  notificationTask = event.data.taskId;
+  refresh();
+});
 
 function toISO(value) {
   if (!value) return null;
@@ -37,6 +57,7 @@ function toLocalInput(value) {
 }
 
 function visibleTask(task) {
+  if (window.TaskCalendar.activeDate && (!task.due_at || window.TaskCalendar.key(new Date(task.due_at)) !== window.TaskCalendar.activeDate)) return false;
   const query = search.value.trim().toLocaleLowerCase("pt-BR");
   if (!`${task.text} ${task.notes || ""}`.toLocaleLowerCase("pt-BR").includes(query)) return false;
   if (filter === "pending") return !task.completed;
@@ -205,6 +226,7 @@ function render() {
   }
   list.setAttribute("aria-busy", String(!loaded));
   updateOverview();
+  window.TaskCalendar.update(tasks);
 }
 
 async function refresh() {
@@ -219,6 +241,7 @@ async function refresh() {
       if (syncStatus.textContent !== "Lista atualizada") syncStatus.textContent = "Lista atualizada";
       syncStatus.classList.remove("is-offline");
       render();
+      revealNotificationTask();
     });
   } catch (error) {
     if (syncStatus.textContent !== "Sem conexão") syncStatus.textContent = "Sem conexão";
@@ -299,6 +322,7 @@ form.addEventListener("submit", async (event) => {
 });
 
 function updateFilters() {
+  window.TaskCalendar.clearFilter();
   document.querySelectorAll("[data-filter]").forEach((button) => {
     button.setAttribute("aria-pressed", String(button.dataset.filter === filter));
   });
@@ -372,13 +396,24 @@ document.querySelector("#edit-form").addEventListener("submit", async (event) =>
   }
 });
 
+window.addEventListener('calendar-date-selected', () => render());
+window.addEventListener('calendar-create-task', (event) => {
+  const time = dueInput.value.slice(11) || '09:00';
+  dueInput.value = `${event.detail.date}T${time}`;
+  document.querySelector('.task-details').open = true;
+  document.querySelector('.composer').scrollIntoView({ block: 'center' });
+  input.focus({ preventScroll: true });
+});
+
 window.listActions = {
+  edit: openEdit,
   run: enqueue,
   refresh,
 };
 window.addEventListener("task-account-changed", () => {
   // Limpa a lista anterior antes de carregar dados de outra conta/fonte.
   tasks = [];
+  window.TaskCalendar.reset();
   loaded = false;
   search.value = "";
   filter = "all";

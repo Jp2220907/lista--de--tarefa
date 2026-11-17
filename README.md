@@ -4,9 +4,11 @@ A lista mantém o modo local SQLite e acrescenta cadastro/login, importação
 confirmada e tarefas na nuvem. O notebook compartilha a mesma sessão entre
 página e MCP; o site hospedado usa Supabase diretamente pelo SDK oficial.
 
-**Situação desta entrega:** código e testes locais prontos; a versão de nuvem
-precisa ser aplicada no notebook e validada no Supabase real. A rede deste
-ambiente bloqueou a conexão ao projeto. Não houve publicação do site.
+**Situação:** versão online publicada na Vercel; login, recuperação de senha,
+sincronização no iPhone e isolamento entre contas foram validados pelo usuário.
+Esta atualização acrescenta calendário mensal e integração Web Push. Os envios
+exigem a ativação descrita em [Ativar notificações](supabase/ATIVAR_NOTIFICACOES.md).
+Nenhum aviso real foi enviado pelos testes automatizados.
 
 Consulte [Login e sincronização](supabase/LOGIN_E_SINCRONIZACAO.md) e siga
 `SINCRONIZAR_COM_HERMES.txt` para atualizar a instalação conectada.
@@ -51,13 +53,12 @@ mesma pasta Windows. Ao atualizar, reinicie servidor e recarregue o MCP.
 Para importar o repositório na Vercel, siga `PUBLICAR_NA_VERCEL.md`. O vercel.json
 configura a publicação somente de static, usando o SDK já empacotado.
 
-Site-minha-lista.zip contém só os arquivos estáticos, preparados para HTTPS e
-instalação pela Tela de Início do iPhone. Hospedagem/publicação ainda não foram
-feitas e a instalação PWA ainda não foi validada em aparelho real.
+O site em https://lista-de-tarefa-omega.vercel.app/ também pode ser instalado pela
+Tela de Início do iPhone, como já foi validado pelo usuário.
 O service worker guarda só o shell público; não guarda tarefas ou respostas Auth.
 
-Continuam pendentes: validação real de cadastro, duas contas e dois dispositivos,
-calendário visual, notificações, offline completo, Apple/Lembretes e Obsidian.
+Continuam pendentes: ativação e validação real dos avisos, offline completo,
+Apple/Lembretes e Obsidian. O próprio Hermes depende do notebook ligado.
 As tarefas antigas e as configurações do Hermes devem ser preservadas em cada
 atualização; o atualizador oferece previsão e backup antes de aplicar.
 
@@ -70,6 +71,25 @@ A recuperação usa uma sessão temporária em memória, separada do login da li
 Os links usam a raiz HTTPS já permitida no Supabase. Detalhes e roteiro de teste
 estão em `supabase/LOGIN_E_SINCRONIZACAO.md`.
 
-O fluxo foi verificado com SDK oficial e serviço simulado; envio do e-mail real
-precisa ser testado no projeto publicado. Para repetir o teste de navegador em
+O fluxo foi verificado com SDK oficial e serviço simulado; o usuário também
+validou a troca de senha no projeto publicado. Para repetir o teste de navegador em
 Linux com Chromium e Playwright instalados: `python tests/browser_recovery.py`.
+
+## Calendário e avisos
+
+O calendário mensal mostra tarefas com data no fuso do aparelho. Selecione um
+dia para ver a agenda, editar uma tarefa ou adicionar outra naquele dia. Os
+filtros Todas/Hoje/Pendentes/Concluídas removem a seleção de data da lista.
+
+O botão **Avisos** permite ativar ou desativar notificações por conta e aparelho,
+com consentimento explícito. Após configurar o Supabase, o serviço verifica a
+cada minuto os avisos dez minutos antes e no horário da tarefa. A entrega depende
+da conexão e do sistema operacional. O texto não expõe o título ou as anotações.
+Ao sair ou trocar de conta, o vínculo de notificações do aparelho é desativado.
+O agendamento no Supabase funciona com o notebook desligado; isso não hospeda o Hermes.
+
+Além dos 24 testes Python, execute `npm ci` e `npm run test:notifications` para os
+oito testes de SQL, isolamento de inscrições, filas, criptografia e worker.
+Com Playwright/Chromium instalados, `python tests/browser_calendar.py` verifica
+datas, filtros, edição e tamanhos de tela; `python tests/browser_notifications.py`
+verifica consentimento e troca de conta com PushManager simulado.
