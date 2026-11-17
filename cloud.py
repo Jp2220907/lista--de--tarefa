@@ -37,6 +37,10 @@ class SupabaseHTTP:
         config = config or json.loads(CONFIG.read_text(encoding='utf-8'))
         self.url = config['url'].rstrip('/')
         self.key = config['publishableKey']
+        self.app_url = config.get('appUrl', 'https://lista-de-tarefa-omega.vercel.app/').rstrip('/') + '/'
+        app = urllib.parse.urlsplit(self.app_url)
+        if app.scheme != 'https' or not app.hostname or app.username or app.query or app.fragment:
+            raise ValueError('Endereço público do aplicativo inválido.')
         parsed = urllib.parse.urlsplit(self.url)
         if (parsed.scheme != 'https' or not parsed.hostname or not parsed.hostname.endswith('.supabase.co')
                 or parsed.path or parsed.query or parsed.fragment or parsed.username or parsed.port):
@@ -167,6 +171,16 @@ class Account:
         result = self.api.call('POST', '/auth/v1/signup?redirect_to=' + urllib.parse.quote(redirect, safe=''), self.credentials(data))
         # Cadastro não troca a conta ativa nem importa tarefas automaticamente.
         return {'message': 'Verifique sua caixa de entrada e confirme o e-mail. Depois volte à lista e entre com sua senha.'}
+
+    def recover_password(self, data):
+        if set(data) != {'email'}:
+            raise ValueError('Informe somente seu e-mail para recuperar a senha.')
+        email = data['email']
+        if not isinstance(email, str) or '@' not in email or len(email) > 320:
+            raise ValueError('Informe um e-mail válido.')
+        # Não lê nem substitui a sessão compartilhada pelo aplicativo e MCP.
+        self.api.call('POST', '/auth/v1/recover?redirect_to=' + urllib.parse.quote(self.api.app_url, safe=''), {'email': email.strip()})
+        return {'message': 'Se houver uma conta com esse e-mail, você receberá um link para criar uma nova senha. Confira também a pasta de spam.'}
 
     def login(self, data):
         credentials = self.credentials(data)

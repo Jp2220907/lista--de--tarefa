@@ -23,7 +23,7 @@ MCP e os testes, use a .venv existente ou crie uma e instale requirements.txt.
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-São 21 testes; o serviço remoto dos testes é um fixture local. Eles não comprovam
+São 24 testes; o serviço remoto dos testes é um fixture local. Eles não comprovam
 as políticas nem o envio de e-mail do Supabase real. Para reconstruir o SDK
 empacotado, use `npm ci` e `npm run build:client`; isso não é necessário para
 usar os arquivos já distribuídos.
@@ -60,3 +60,16 @@ Continuam pendentes: validação real de cadastro, duas contas e dois dispositiv
 calendário visual, notificações, offline completo, Apple/Lembretes e Obsidian.
 As tarefas antigas e as configurações do Hermes devem ser preservadas em cada
 atualização; o atualizador oferece previsão e backup antes de aplicar.
+
+
+## Esqueci minha senha
+
+O botão fica no formulário de conta e precisa somente do e-mail. O link abre
+uma tela própria para definir e confirmar a nova senha (mínimo de 8 caracteres).
+A recuperação usa uma sessão temporária em memória, separada do login da lista.
+Os links usam a raiz HTTPS já permitida no Supabase. Detalhes e roteiro de teste
+estão em `supabase/LOGIN_E_SINCRONIZACAO.md`.
+
+O fluxo foi verificado com SDK oficial e serviço simulado; envio do e-mail real
+precisa ser testado no projeto publicado. Para repetir o teste de navegador em
+Linux com Chromium e Playwright instalados: `python tests/browser_recovery.py`.

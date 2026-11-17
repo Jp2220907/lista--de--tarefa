@@ -15,6 +15,7 @@ FILES = (
     "static/account-ui.js", "static/vendor/supabase.js", "static/manifest.webmanifest",
     "static/sw.js", "static/icons/icon-192.png", "static/icons/icon-512.png", "static/_headers",
     "supabase/LOGIN_E_SINCRONIZACAO.md", "SINCRONIZAR_COM_HERMES.txt",
+    "static/recuperar-senha.html", "static/recovery.js",
 )
 
 

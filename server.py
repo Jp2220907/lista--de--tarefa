@@ -16,6 +16,8 @@ FILES = {'/': ('index.html', 'text/html; charset=utf-8'),
          '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
          '/connection.js': ('connection.js', 'text/javascript; charset=utf-8'),
          '/account-ui.js': ('account-ui.js', 'text/javascript; charset=utf-8'),
+         '/recuperar-senha.html': ('recuperar-senha.html', 'text/html; charset=utf-8'),
+         '/recovery.js': ('recovery.js', 'text/javascript; charset=utf-8'),
          '/vendor/supabase.js': ('vendor/supabase.js', 'text/javascript; charset=utf-8'),
          '/cloud-config.json': ('cloud-config.json', 'application/json; charset=utf-8'),
          '/manifest.webmanifest': ('manifest.webmanifest', 'application/manifest+json'),
@@ -89,7 +91,9 @@ def make_server(port=8765, db_path=None, cloud_api=None):
                 self._send(404, {'error': 'Página não encontrada.'})
 
         def _change(self, path):
-            if self.command == 'POST' and path == '/api/account/signup':
+            if self.command == 'POST' and path == '/api/account/recover':
+                self._send(200, store.account.recover_password(self._body()))
+            elif self.command == 'POST' and path == '/api/account/signup':
                 self._send(200, store.account.signup(self._body(), 'http://' + self.headers['Host'] + '/'))
             elif self.command == 'POST' and path == '/api/account/login':
                 store.account.login(self._body())

@@ -58,6 +58,11 @@
     const address = email.value.trim(), secret = password.value;
     action(async () => { const result = await api.signup(address, secret); showMessage(result.message); });
   });
+  document.querySelector("#forgot-password").addEventListener("click", () => {
+    if (!email.reportValidity()) return;
+    const address = email.value.trim();
+    action(async () => { const result = await api.recoverPassword(address); showMessage(result.message); });
+  });
   document.querySelector("#logout-account").addEventListener("click", () => {
     action(async () => { await api.logout(); modal.close(); });
   });
@@ -70,5 +75,19 @@
     }).then(() => window.listActions.refresh());
   });
   api.subscribe(display);
-  api.ready.then((state) => { display(state); if (state.mode === "signed-out") open(); }).catch((error) => { open(); showMessage(error.message, true); });
+  api.ready.then((state) => {
+    display(state);
+    const url = new URL(location.href);
+    const requestedLogin = url.searchParams.get('login') === '1';
+    if (requestedLogin) {
+      url.searchParams.delete('login');
+      history.replaceState(null, '', url.pathname + url.search);
+    }
+    if (state.mode === "signed-out" || requestedLogin) open();
+    if (requestedLogin) {
+      email.value = '';
+      showMessage('Entre com o e-mail da conta recuperada e sua senha nova.');
+      email.focus();
+    }
+  }).catch((error) => { open(); showMessage(error.message, true); });
 })();

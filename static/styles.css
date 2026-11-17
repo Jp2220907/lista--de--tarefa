@@ -168,3 +168,21 @@ dialog .error-message { margin-top: 16px; }
 #account-message.is-error { background: #fff0e8; color: #91512c; }
 #logout-account { margin-top: 20px; width: 100%; }
 @media (max-width: 760px) { #current-date { display: none; }.account-top { gap: 6px; }#account-button { font-size: 11px; padding: 7px; }.account-banner { font-size: 11px; line-height: 1.6; } }
+
+.text-button { display: block; border: 0; background: transparent; color: #286a54; text-decoration: underline; text-underline-offset: 3px; padding: 10px 0; font-size: 12px; min-height: 40px; }
+.recovery-page { min-height: 100vh; padding: 48px 20px; display: grid; place-items: center; }
+.recovery-card { width: min(100%, 480px); padding: 34px; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: 0 12px 50px #173e2910; }
+.recovery-brand { color: #293c35; font-size: 24px; font-weight: 750; letter-spacing: -1px; margin-bottom: 36px; }
+.recovery-brand span { color: var(--green); }
+.recovery-card h1 { font-size: 29px; }
+.recovery-card label { display: block; margin: 20px 0 8px; font-size: 13px; font-weight: 600; }
+.recovery-card input { font-size: 16px; }
+.recovery-card fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+#recovery-status, #recovery-user { font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+#recovery-user { color: var(--green); }
+#password-hint { font-size: 11px; line-height: 1.6; color: var(--muted); }
+#save-password { width: 100%; margin-top: 25px; }
+#back-to-login { display: inline-flex; margin: 22px 0 8px; font-size: 13px; color: var(--green); }
+#back-to-login.primary-button { color: white; text-decoration: none; }
+#recovery-error { margin: 20px 0 0; }
+@media (max-width: 600px) { .recovery-page { padding: 24px 16px; }.recovery-card { padding: 28px 22px; } }

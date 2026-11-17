@@ -18,7 +18,7 @@ O pacote implementa a próxima etapa, mas não foi aplicado neste Windows.
    Se houver TASKS_DB_PATH externo, faça backup consistente desse banco também.
 4. Na pasta antiga execute testes com .venv/Scripts/python.exe:
    -m unittest discover -s tests -v
-   A versão atual tem 21 testes. Não altere testes para fazê-los passar. Nesses
+   A versão atual tem 24 testes. Não altere testes para fazê-los passar. Nesses
    testes, Supabase é simulado por um serviço HTTP local; não declarar nuvem real
    validada só porque passaram.
 5. Reinicie o servidor no loopback e recarregue lista_tarefas. Confira a página e

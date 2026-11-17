@@ -114,3 +114,39 @@ Os testes de Python incluem HTTP local, cliente MCP real com subprocesso,
 renovação de token, mudança de conta, importação repetível e perda de conexão,
 contra fixture local. Não criam contas no projeto real. Os testes do navegador
 incluíram desktop e viewport móvel, SDK oficial, duas páginas e sessão persistida.
+
+## Recuperação de senha
+
+Na tela Minha conta/Entrar há o botão **Esqueci minha senha**. Basta preencher o
+campo de e-mail; não é necessário preencher a senha atual. A resposta não confirma
+se o endereço tem cadastro. Limites de envio e erros de conexão são informados.
+
+O link usa a URL raiz HTTPS já cadastrada neste projeto. Ao receber um link com
+`type=recovery`, a página inicial encaminha para `recuperar-senha.html` antes de
+carregar a conta normal. A tela valida os tokens com o SDK oficial, remove o
+fragmento da barra de endereço e mantém uma sessão exclusiva em memória.
+Não substitui a conta aberta na lista nem a sessão compartilhada com o MCP.
+O pedido de recuperação feito pelo servidor local também aponta para o endereço
+público (`appUrl` de cloud-config.json), para poder abrir o e-mail no celular.
+
+O formulário exige duas senhas iguais com pelo menos oito caracteres. Após o
+Supabase confirmar a alteração, descarta a sessão temporária e oferece voltar ao
+login. Não há senha nova ou token gravado pelo servidor dessa tela. A rotação e
+invalidação de outras sessões seguem as regras do Supabase; esta função não faz
+logout global nem promete preservar tokens que o provedor revogar.
+
+Para testar no site publicado:
+
+1. Abrir Minha conta/Entrar, preencher o e-mail e escolher Esqueci minha senha.
+2. Abrir o e-mail mais recente e seguir o link. Não compartilhar esse link,
+   o fragmento da URL, senhas ou tokens em chats.
+3. Definir e confirmar uma senha nova. Se o link expirou/já foi utilizado,
+   solicitar outro; após recarregar a tela sem o link, ela também pede um novo.
+4. Voltar ao login e confirmar que a senha nova funciona e a anterior é recusada.
+5. Conferir que as tarefas e a conta proprietária continuam corretas.
+
+Não há alteração de SQL. É usado o endereço raiz que já consta em Site URL e
+Redirect URLs. Em outra hospedagem, ajustar appUrl para sua URL pública.
+Limites de envio do Supabase podem exigir aguardar antes de pedir outro e-mail.
+A validação com e-mail real continua a cargo do teste do usuário; testes locais
+usam um serviço fictício e não enviam e-mail.

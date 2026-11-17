@@ -1,7 +1,7 @@
 "use strict";
 // Somente o shell público. Nenhuma resposta Auth/REST/API nem dado pessoal é cacheado.
-const CACHE = "minha-lista-shell-v1";
-const ASSETS = ["/", "/index.html", "/styles.css", "/app.js", "/connection.js", "/account-ui.js", "/cloud-config.json", "/vendor/supabase.js", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
+const CACHE = "minha-lista-shell-v2";
+const ASSETS = ["/", "/index.html", "/styles.css", "/app.js", "/connection.js", "/account-ui.js", "/recuperar-senha.html", "/recovery.js", "/cloud-config.json", "/vendor/supabase.js", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 self.addEventListener("install", (event) => { event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS))); });
 self.addEventListener("activate", (event) => {
   event.waitUntil(caches.keys().then((names) => Promise.all(names.filter((name) => name.startsWith("minha-lista-shell-") && name !== CACHE).map((name) => caches.delete(name)))).then(() => self.clients.claim()));

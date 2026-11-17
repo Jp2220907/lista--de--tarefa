@@ -79,11 +79,52 @@ class CloudTests(unittest.TestCase):
         status = self.store.account.login(self.credentials)
         with self.assertRaises(CloudError): self.store.account.login({**self.credentials, 'password': 'errada123'})
         self.assertEqual(self.store.account.status(), status)
+
         result = self.store.account.signup({**self.credentials, 'email': 'nova@example.test'}, 'http://127.0.0.1:8765/')
         self.assertIn('confirme', result['message'])
         with self.assertRaisesRegex(CloudError, 'Confirme'):
             self.store.account.login({**self.credentials, 'email': 'nova@example.test'})
         self.assertEqual(self.store.account.status(), status)
+
+    def test_recovery_request_preserves_active_session_and_is_generic(self):
+        self.store.account.login(self.credentials)
+        saved_session = self.store.account.path.read_bytes()
+        result = self.store.account.recover_password({'email': self.credentials['email']})
+        unknown = self.store.account.recover_password({'email': 'nao-existe@example.test'})
+        self.assertEqual(result, unknown)
+        self.assertIn('Se houver uma conta', result['message'])
+        self.assertEqual(len(self.remote.recoveries), 1)
+        self.assertEqual(self.remote.recoveries[0]['redirect'], 'https://lista-de-tarefa-omega.vercel.app/')
+        self.assertEqual(self.store.account.path.read_bytes(), saved_session)
+        self.assertEqual(self.store.local.list_tasks(), [self.local])
+
+    def test_recovery_rejects_extra_fields_invalid_email_and_reports_network_failure(self):
+        for data in ({}, {'email': ''}, {'email': None}, {'email': 'sem-arroba'}, self.credentials):
+            with self.assertRaises(ValueError): self.store.account.recover_password(data)
+        self.remote.fail = True
+        with self.assertRaises(CloudError): self.store.account.recover_password({'email': 'ana@example.test'})
+        self.assertEqual(self.store.account.status()['mode'], 'local')
+        self.assertEqual(self.remote.recoveries, [])
+
+    def test_recovery_http_endpoint_requires_local_origin_and_only_email(self):
+        server = make_server(0, self.db, api_for(self.remote.url))
+        thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+        try:
+            for origin, body, expected in ((None, {'email': 'ana@example.test'}, 200),
+                                          (None, {'email': 'ana@example.test', 'password': 'nao-enviar'}, 400),
+                                          ('https://outro.example', {'email': 'ana@example.test'}, 403)):
+                connection = http.client.HTTPConnection('127.0.0.1', server.server_port)
+                headers = {'Content-Type': 'application/json'}
+                if origin: headers['Origin'] = origin
+                connection.request('POST', '/api/account/recover', json.dumps(body), headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, expected)
+                payload = response.read().decode()
+                self.assertNotIn('access_token', payload)
+                connection.close()
+            self.assertEqual(len(self.remote.recoveries), 1)
+        finally:
+            server.shutdown(); server.server_close(); thread.join()
 
     def test_corrupt_session_and_expired_credentials_never_fall_back_to_local(self):
         self.store.account.login(self.credentials)

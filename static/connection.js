@@ -60,6 +60,12 @@ window.TaskConnection = (() => {
   }
 
   const ready = (async () => {
+    const fragment = new URLSearchParams(location.hash.slice(1));
+    if (fragment.get('type') === 'recovery' || fragment.has('error')) {
+      // Encaminha a recuperação antes de abrir a sessão normal do aplicativo.
+      location.replace('/recuperar-senha.html' + location.hash);
+      return new Promise(() => {});
+    }
     // A confirmação é seguida de login por senha. Não retemos tokens no fragmento.
     if (location.hash.includes("access_token=")) history.replaceState(null, "", location.pathname + location.search);
     if (desktop) return refreshAccount();
@@ -126,6 +132,14 @@ window.TaskConnection = (() => {
     return { message: "Verifique sua caixa de entrada e confirme o e-mail. Depois volte à lista e entre com sua senha." };
   }
 
+  async function recoverPassword(email) {
+    await ready;
+    if (desktop) return raw('/api/account/recover', { method: 'POST', body: JSON.stringify({ email }) });
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/' });
+    if (error) throw sdkError(error);
+    return { message: 'Se houver uma conta com esse e-mail, você receberá um link para criar uma nova senha. Confira também a pasta de spam.' };
+  }
+
   async function logout() {
     await ready;
     if (desktop) return publish(await raw("/api/account/logout", { method: "POST", body: "{}" }));
@@ -139,6 +153,6 @@ window.TaskConnection = (() => {
     return raw("/api/account/import", { method: "POST", body: "{}" });
   }
 
-  return { ready, request, login, signup, logout, importLocal, refreshAccount,
+  return { ready, request, login, signup, recoverPassword, logout, importLocal, refreshAccount,
     get state() { return state; }, subscribe(callback) { listeners.add(callback); return () => listeners.delete(callback); } };
 })();

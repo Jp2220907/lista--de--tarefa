@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light">
+  <title>Nova senha · Minha lista</title>
+  <link rel="icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/vendor/supabase.js" defer></script>
+  <script src="/recovery.js" defer></script>
+</head>
+<body class="recovery-page">
+  <main class="recovery-card" aria-labelledby="recovery-title">
+    <div class="recovery-brand">minha lista<span>.</span></div>
+    <p class="eyebrow">UM NOVO COMEÇO</p>
+    <h1 id="recovery-title">Crie sua nova senha<span>.</span></h1>
+    <p id="recovery-status" role="status">Validando seu link de recuperação…</p>
+    <p id="recovery-user" hidden></p>
+    <form id="recovery-form" hidden>
+      <fieldset id="recovery-fields" disabled>
+        <label for="new-password">Nova senha</label>
+        <input id="new-password" type="password" autocomplete="new-password" minlength="8" maxlength="1024" required aria-describedby="password-hint">
+        <p id="password-hint">Use pelo menos 8 caracteres e escolha uma senha diferente da anterior.</p>
+        <label for="confirm-password">Confirme a nova senha</label>
+        <input id="confirm-password" type="password" autocomplete="new-password" minlength="8" maxlength="1024" required>
+        <button id="save-password" class="primary-button" type="submit">Salvar nova senha</button>
+      </fieldset>
+    </form>
+    <p id="recovery-error" class="error-message" role="alert" hidden></p>
+    <a id="back-to-login" href="/?login=1">Voltar ao login</a>
+    <p class="account-description">Seu link é pessoal. Se ele expirou ou já foi utilizado, volte ao login e solicite outro em “Esqueci minha senha”.</p>
+  </main>
+</body>
+</html>
