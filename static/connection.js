@@ -86,8 +86,12 @@ window.TaskConnection = (() => {
 
   async function request(path, options = {}) {
     await ready;
+    const { expectedContext, ...requestOptions } = options;
+    if (expectedContext !== undefined && expectedContext !== state.context) {
+      throw new Error("A conta mudou. Envie o comando novamente.");
+    }
     if (desktop) {
-      try { return await raw(path, options); }
+      try { return await raw(path, requestOptions); }
       catch (error) {
         if (error.status === 409) await refreshAccount();
         if (error.status === 401) window.dispatchEvent(new Event("task-login-needed"));
@@ -96,12 +100,22 @@ window.TaskConnection = (() => {
     }
     if (state.mode !== "cloud") throw new Error("Entre na sua conta para carregar as tarefas.");
     const expected = state.context;
-    const method = options.method || "GET";
+    const method = requestOptions.method || "GET";
+    let token;
+    if (expectedContext !== undefined) {
+      const { data, error } = await client.auth.getSession();
+      if (error) throw sdkError(error);
+      if (expected !== state.context || sessionState(data.session).context !== expected) {
+        throw new Error("A conta mudou. Envie o comando novamente.");
+      }
+      token = data.session.access_token;
+    }
+    const authorize = (query) => token ? query.setHeader("Authorization", `Bearer ${token}`) : query;
     let result;
     if (method === "GET" && path === "/api/tasks") {
       const tasks = [];
       for (let offset = 0; ; offset += 1000) {
-        result = await client.from("tasks").select(fields).order("created_at").order("id").range(offset, offset + 999);
+        result = await authorize(client.from("tasks").select(fields).order("created_at").order("id").range(offset, offset + 999));
         if (result.error) throw sdkError(result.error);
         tasks.push(...result.data);
         if (result.data.length < 1000) break;
@@ -109,9 +123,9 @@ window.TaskConnection = (() => {
       if (expected !== state.context) throw new Error("A conta mudou. A lista será recarregada.");
       return { tasks };
     }
-    const data = JSON.parse(options.body || "{}");
-    if (method === "POST" && path === "/api/tasks") result = await client.from("tasks").insert(data).select(fields).single();
-    else if (method === "PATCH" && path.startsWith("/api/tasks/")) result = await client.from("tasks").update(data).eq("id", decodeURIComponent(path.slice(11))).select(fields).single();
+    const data = JSON.parse(requestOptions.body || "{}");
+    if (method === "POST" && path === "/api/tasks") result = await authorize(client.from("tasks").insert(data).select(fields).single());
+    else if (method === "PATCH" && path.startsWith("/api/tasks/")) result = await authorize(client.from("tasks").update(data).eq("id", decodeURIComponent(path.slice(11))).select(fields).single());
     else throw new Error("Operação indisponível.");
     if (result.error) throw sdkError(result.error);
     if (expected !== state.context) throw new Error("A conta mudou. Confira o resultado antes de repetir a ação.");

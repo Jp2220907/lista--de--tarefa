@@ -16,7 +16,7 @@ FILES = (
     "static/sw.js", "static/icons/icon-192.png", "static/icons/icon-512.png", "static/_headers",
     "supabase/LOGIN_E_SINCRONIZACAO.md", "SINCRONIZAR_COM_HERMES.txt",
     "static/recuperar-senha.html", "static/recovery.js",
-    "static/calendar.js", "static/notifications.js", "static/push-state.js",
+    "static/calendar.js", "static/assistant.js", "static/notifications.js", "static/push-state.js",
     "supabase/02_notificacoes.sql", "supabase/03_agendamento_notificacoes.sql",
     "supabase/ATIVAR_NOTIFICACOES.md", "supabase/config.toml",
     "supabase/functions/task-reminders/index.ts",

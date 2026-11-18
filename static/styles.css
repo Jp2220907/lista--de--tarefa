@@ -239,6 +239,15 @@ dialog .error-message { margin-top: 16px; }
   .calendar-weekdays, .calendar-grid { gap: 4px; }
 }
 
-#notification-button, #check-notifications, #disable-notifications, #close-notifications { border: 1px solid #dce6df; border-radius: 7px; padding: 9px 12px; background: #fff; color: var(--green); font-size: 12px; }
+#assistant-button, #close-assistant, #notification-button, #check-notifications, #disable-notifications, #close-notifications { border: 1px solid #dce6df; border-radius: 7px; padding: 9px 12px; background: #fff; color: var(--green); font-size: 12px; }
 #notification-status { padding: 13px; background: #f0f5ed; border-radius: 8px; font-size: 13px; line-height: 1.8; }
 @media (max-width: 480px) { .topbar .breadcrumb { display: none; }.topbar { justify-content: flex-end; } }
+
+#assistant-response { overflow-wrap: anywhere; }
+#assistant-response:empty { display: none; }
+#assistant-results { padding-left: 20px; overflow-wrap: anywhere; }
+#assistant-results li + li { margin-top: 8px; }
+@media (max-width: 480px) {
+  .topbar { padding-inline: 15px; }
+  #assistant-button, #notification-button { padding-inline: 8px; }
+}
