@@ -66,13 +66,14 @@
     <form id="assistant-form">
       <label for="assistant-command">Seu comando</label>
       <input id="assistant-command" type="text" required maxlength="600" autocomplete="off" enterkeyhint="send" aria-describedby="assistant-examples">
-      <p id="assistant-examples" class="account-description">Exemplos: “Adicionar pagar a internet amanhã às 9h” ou “Mostrar tarefas de hoje”.</p>
+      <p id="assistant-examples" class="account-description">Experimente “Agendar consulta sexta às 14h; nota: levar exames”, “Anotar comprar pilhas” ou “Mostrar tarefas de hoje”.</p>
       <div class="dialog-actions">
         <button id="close-assistant" type="button">Fechar</button>
         <button class="primary-button" id="send-assistant" type="submit">Enviar</button>
       </div>
     </form>
     <p id="assistant-response" role="status"></p>
+    <p id="assistant-preview-notes" class="account-description" hidden></p>
     <ul id="assistant-results" hidden></ul>
     <button class="primary-button" id="confirm-assistant" type="button" hidden>Confirmar criação</button>
   </dialog>

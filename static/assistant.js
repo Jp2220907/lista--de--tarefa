@@ -7,47 +7,85 @@
   const send = document.querySelector("#send-assistant");
   const confirm = document.querySelector("#confirm-assistant");
   const response = document.querySelector("#assistant-response");
+  const previewNotes = document.querySelector("#assistant-preview-notes");
   const results = document.querySelector("#assistant-results");
   const usage = 'Tente “Adicionar pagar a internet amanhã às 9h” ou “Mostrar tarefas de hoje”.';
   let draft = null;
   let busy = false;
 
+  const weekdays = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
+  const weekdayPattern = "domingo|(?:segunda|ter[çc]a|quarta|quinta|sexta)(?:-feira)?|s[áa]bado";
+  const dayPattern = `hoje|amanh[ãa]|depois de amanh[ãa]|${weekdayPattern}|\\d{1,2}/\\d{1,2}(?:/\\d{4})?`;
+  const scheduledDate = new RegExp(`\\s+(?:(?:para\\s+)?(?:o\\s+)?dia\\s+|(?:para|no dia|na|no)\\s+)?(${dayPattern})(?:\\s+[àa]s?\\s+(.+))?$`, "i");
+  const relativeDate = /\s+(?:para )?daqui a (\d{1,4})\s+(minutos?|horas?)[.!]?$/i;
+  const normalize = (text) => text.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/\p{M}/gu, "");
+
+  function resolveDate(dateText, timeText, now) {
+    const time = /^(\d{1,2})(?:h(\d{2})?|:(\d{2}))?[.!]?$/i.exec(timeText || "");
+    if (!time || Number(time[1]) > 23 || Number(time[2] || time[3] || 0) > 59) {
+      throw new Error('Informe um horário válido, como “amanhã às 9h30” ou “dia 25/11 às 14:00”.');
+    }
+    const hours = Number(time[1]);
+    const minutes = Number(time[2] || time[3] || 0);
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+    const day = normalize(dateText).replace(/-feira$/, "");
+    const [dayOfMonth, month, year = now.getFullYear()] = day.split("/").map(Number);
+    if (day.includes("/")) {
+      date.setFullYear(year, month - 1, dayOfMonth);
+      if (year < 1000 || date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== dayOfMonth) {
+        throw new Error("Essa data não existe. Confira o dia, o mês e o ano.");
+      }
+    } else {
+      const weekday = weekdays.indexOf(day);
+      const offset = weekday >= 0 ? (weekday - now.getDay() + 7) % 7 || 7
+        : day === "depois de amanha" ? 2 : day === "amanha" ? 1 : 0;
+      date.setDate(date.getDate() + offset);
+    }
+    date.setHours(hours, minutes, 0, 0);
+    if (date.getHours() !== hours || date.getMinutes() !== minutes) throw new Error("Esse horário não existe no fuso deste aparelho.");
+    return date.toISOString();
+  }
+
   function parse(command, now = new Date()) {
     const value = command.trim().replace(/\s+/g, " ");
-    const normalized = value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/\p{M}/gu, "").replace(/[?.!]$/, "");
+    const normalized = normalize(value).replace(/[?.!]$/, "");
     const listing = /^(?:mostrar|listar|ver) (?:as |minhas )?tarefas(?: (?:de )?(hoje|amanha|pendentes|concluidas|todas))?$/.exec(normalized);
     if (listing) return { view: listing[1] || "todas" };
 
-    const creation = /^(?:adicionar|adicione|criar|crie)(?:\s+(?:uma\s+)?tarefa(?:\s*:\s*|\s+)|\s+|:\s*)(.+)$/i.exec(value);
+    const creation = /^(?:adicionar|adicione|adiciona|criar|crie|cria|agendar|agende|anotar|anote)(?:\s*:\s*|\s+)(.*)$/i.exec(value);
     if (!creation) throw new Error(usage);
+    const content = creation[1].replace(/^(?:uma\s+)?tarefa(?:\s*:\s*|\s+|$)/i, "");
+    const notesMarker = /;\s*(?:nota(?:s)?|anota(?:ç[ãa]o|ç[õo]es|cao|coes))\s*:\s*/i.exec(content);
+    const title = (notesMarker ? content.slice(0, notesMarker.index) : content).trim();
+    const notes = notesMarker ? content.slice(notesMarker.index + notesMarker[0].length).trim() : "";
+    if (notesMarker && !notes) throw new Error('Escreva a anotação depois de “; nota:”.');
 
-    const title = creation[1].trim();
-    const schedule = /\s+(hoje|amanh[ãa])(?:\s+[àa]s\s+(.+))?$/i.exec(title);
+    const relative = relativeDate.exec(title);
+    const schedule = relative ? null : scheduledDate.exec(title);
     let due_at = null;
     let text = title;
-    if (schedule) {
-      const time = /^(\d{1,2})(?:(?:h(?:(\d{2}))?)|:(\d{2}))?$/i.exec(schedule[2]?.trim() || "");
-      if (!time || Number(time[1]) > 23 || Number(time[2] || time[3] || 0) > 59) {
-        throw new Error('Informe um horário válido, como “amanhã às 9h30”.');
-      }
-      const hours = Number(time[1]);
-      const minutes = Number(time[2] || time[3] || 0);
-      const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (schedule[1].toLowerCase() === "hoje" ? 0 : 1), 12);
-      day.setHours(hours, minutes, 0, 0);
-      if (day.getHours() !== hours || day.getMinutes() !== minutes) throw new Error("Esse horário não existe no fuso deste aparelho.");
-      due_at = day.toISOString();
+    if (relative) {
+      const amount = Number(relative[1]);
+      if (!amount) throw new Error("Informe pelo menos um minuto ou uma hora.");
+      const minutes = normalize(relative[2]).startsWith("hora") ? amount * 60 : amount;
+      due_at = new Date(now.getTime() + minutes * 60_000).toISOString();
+      text = title.slice(0, relative.index).trim();
+    } else if (schedule) {
+      due_at = resolveDate(schedule[1], schedule[2], now);
       text = title.slice(0, schedule.index).trim();
-    } else if (/^(?:hoje|amanh[ãa])(?:\s|$)/i.test(title) || /\s+[àa]s\s+\d/i.test(title)) {
-      throw new Error('Escreva o nome da tarefa seguido de “hoje” ou “amanhã” e do horário.');
+    } else if (/\bdaqui a\b|\s+[àa]s?\s+\d/i.test(title)) {
+      throw new Error('Use um dia e um horário, como “sexta às 14h”, ou um prazo como “daqui a 15 minutos”.');
     }
     if (!text || text.length > 500) throw new Error("Use um nome de tarefa com até 500 caracteres.");
-    return { task: { text, due_at } };
+    return { task: { text, due_at, notes } };
   }
 
   function clearResult() {
     draft = null;
     confirm.hidden = true;
     response.textContent = "";
+    previewNotes.textContent = "";
+    previewNotes.hidden = true;
     results.replaceChildren();
     results.hidden = true;
   }
@@ -105,6 +143,10 @@
       if (command.task) {
         draft = { task: command.task, context };
         response.textContent = `Criar “${draft.task.text}” ${draft.task.due_at ? `para ${formatDate(draft.task.due_at)}` : "sem data marcada"}?`;
+        if (draft.task.notes) {
+          previewNotes.textContent = `Anotação: ${draft.task.notes}`;
+          previewNotes.hidden = false;
+        }
         confirm.hidden = false;
         return;
       }

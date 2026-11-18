@@ -1,7 +1,7 @@
 "use strict";
 importScripts("/push-state.js");
 // Somente o shell público. Nenhuma resposta Auth/REST/API nem dado pessoal é cacheado.
-const CACHE = "minha-lista-shell-v4";
+const CACHE = "minha-lista-shell-v5";
 const ASSETS = ["/", "/index.html", "/styles.css", "/app.js", "/assistant.js", "/connection.js", "/account-ui.js", "/calendar.js", "/notifications.js", "/push-state.js", "/recuperar-senha.html", "/recovery.js", "/cloud-config.json", "/vendor/supabase.js", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 self.addEventListener("install", (event) => { event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS))); });
 self.addEventListener("activate", (event) => {
