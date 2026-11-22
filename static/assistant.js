@@ -52,6 +52,12 @@
     const listing = /^(?:mostrar|listar|ver) (?:as |minhas )?tarefas(?: (?:de )?(hoje|amanha|pendentes|concluidas|todas))?$/.exec(normalized);
     if (listing) return { view: listing[1] || "todas" };
 
+    const noteRequest = /^(?:(?:mostrar|mostre|ver|ler|consultar) (?:a |as )?(?:anotacao|anotacoes|notas?) (?:da|do|de)|o que (?:eu )?preciso levar (?:para|pra)(?: a| o)?) (?:tarefa )?(.+)$/.exec(normalized);
+    if (noteRequest) {
+      const query = noteRequest[1].replace(/^["“]|["”]$/g, "").trim();
+      if (query) return { noteQuery: query };
+    }
+
     const creation = /^(?:adicionar|adicione|adiciona|criar|crie|cria|agendar|agende|anotar|anote)(?:\s*:\s*|\s+)(.*)$/i.exec(value);
     if (!creation) throw new Error(usage);
     const content = creation[1].replace(/^(?:uma\s+)?tarefa(?:\s*:\s*|\s+|$)/i, "");
@@ -98,6 +104,34 @@
   }
 
   const formatDate = (value) => new Date(value).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+
+  function showNotes(tasks, query, context) {
+    const matches = tasks.filter((task) => normalize(task.text).includes(query));
+    function display(task) {
+      if (context !== connection.state.context) return;
+      clearResult();
+      response.textContent = task.notes?.trim()
+        ? `Anotação de “${task.text}”` : `“${task.text}” ainda não tem anotação.`;
+      previewNotes.textContent = task.notes || "";
+      previewNotes.hidden = !task.notes?.trim();
+    }
+    if (matches.length === 1) return display(matches[0]);
+    if (!matches.length) {
+      response.textContent = "Nenhuma tarefa encontrada com esse nome.";
+      return;
+    }
+    response.textContent = "Qual destas tarefas você quer consultar?";
+    for (const task of matches) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = `${task.text} · ${task.completed ? "Concluída" : "Pendente"}${task.due_at ? ` · ${formatDate(task.due_at)}` : ""}`;
+      button.addEventListener("click", () => display(task));
+      const item = document.createElement("li");
+      item.append(button);
+      results.append(item);
+    }
+    results.hidden = false;
+  }
 
   function showTasks(tasks, view) {
     const date = new Date();
@@ -151,7 +185,9 @@
         return;
       }
       const data = await window.listActions.run(() => connection.request("/api/tasks", { expectedContext: context }));
-      if (context === connection.state.context) showTasks(data.tasks, command.view);
+      if (context !== connection.state.context) return;
+      if (command.noteQuery) showNotes(data.tasks, command.noteQuery, context);
+      else showTasks(data.tasks, command.view);
     } catch (error) {
       response.textContent = error.message;
     } finally {

@@ -251,3 +251,6 @@ dialog .error-message { margin-top: 16px; }
   .topbar { padding-inline: 15px; }
   #assistant-button, #notification-button { padding-inline: 8px; }
 }
+
+#assistant-preview-notes { white-space: pre-wrap; }
+#assistant-results button { text-align: left; min-height: 44px; max-width: 100%; overflow-wrap: anywhere; }
