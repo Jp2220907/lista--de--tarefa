@@ -16,7 +16,7 @@
       <div class="sidebar-footer"><span class="personal-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg></span><div><strong>Seu espaço pessoal</strong><span>Organize no seu ritmo</span></div></div>
     </aside>
     <div class="main-shell">
-      <header class="topbar"><div class="breadcrumb">Meu espaço <span>/</span> <strong id="view-name">Todas as tarefas</strong></div><div class="account-top"><time id="current-date">Hoje</time><button id="assistant-button" type="button">Assistente</button><button id="notification-button" type="button">Avisos</button><button id="account-button" type="button">Entrar para sincronizar</button></div></header>
+      <header class="topbar"><div class="breadcrumb">Meu espaço <span>/</span> <strong id="view-name">Todas as tarefas</strong></div><div class="account-top"><time id="current-date">Hoje</time><button id="notification-button" type="button">Avisos</button><button id="account-button" type="button">Entrar para sincronizar</button></div></header>
       <main class="workspace" id="main-content">
         <header class="page-header"><div><p class="eyebrow">MENOS RUÍDO, MAIS CLAREZA</p><h1 id="page-title">Minhas tarefas<span>.</span></h1><p class="subtitle" id="page-subtitle">Um lugar para organizar o dia e tirar as ideias do papel.</p></div><button class="primary-button" id="focus-composer" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nova tarefa</span></button></header>
         <div class="account-banner"><span id="account-mode" role="status">Lista local neste notebook</span><button id="import-local" type="button" hidden>Enviar tarefas locais para minha conta</button></div>
@@ -61,12 +61,13 @@
     </div>
   </div>
 
+  <button id="assistant-button" aria-haspopup="dialog" aria-controls="assistant-dialog" type="button">Assistente</button>
   <dialog id="assistant-dialog" aria-labelledby="assistant-title">
     <h2 id="assistant-title">Assistente de tarefas</h2>
     <form id="assistant-form">
       <label for="assistant-command">Seu comando</label>
       <input id="assistant-command" type="text" required maxlength="600" autocomplete="off" enterkeyhint="send" aria-describedby="assistant-examples">
-      <p id="assistant-examples" class="account-description">Experimente “Agendar consulta sexta às 14h; nota: levar exames”, “Mostrar tarefas de hoje” ou “Mostrar a anotação da consulta”.</p>
+      <p id="assistant-examples" class="account-description">Experimente “Agendar consulta sexta às 14h; nota: levar exames”, “Concluir pagar a internet” ou “Reabrir pagar a internet”.</p>
       <div class="dialog-actions">
         <button id="close-assistant" type="button">Fechar</button>
         <button class="primary-button" id="send-assistant" type="submit">Enviar</button>

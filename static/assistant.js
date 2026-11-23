@@ -52,6 +52,13 @@
     const listing = /^(?:mostrar|listar|ver) (?:as |minhas )?tarefas(?: (?:de )?(hoje|amanha|pendentes|concluidas|todas))?$/.exec(normalized);
     if (listing) return { view: listing[1] || "todas" };
 
+    const change = /^(concluir|conclua|reabrir|reabra|deixar pendente) (?:(?:a )?tarefa )?(.+)$/.exec(normalized);
+    if (change) {
+      const query = change[2].replace(/^["“]|["”]$/g, "").trim();
+      if (!query) throw new Error("Informe o nome da tarefa.");
+      return { query, completed: change[1].startsWith("concl") };
+    }
+
     const noteRequest = /^(?:(?:mostrar|mostre|ver|ler|consultar) (?:a |as )?(?:anotacao|anotacoes|notas?) (?:da|do|de)|o que (?:eu )?preciso levar (?:para|pra)(?: a| o)?) (?:tarefa )?(.+)$/.exec(normalized);
     if (noteRequest) {
       const query = noteRequest[1].replace(/^["“]|["”]$/g, "").trim();
@@ -105,11 +112,22 @@
 
   const formatDate = (value) => new Date(value).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 
-  function showNotes(tasks, query, context) {
-    const matches = tasks.filter((task) => normalize(task.text).includes(query));
+  function selectTask(tasks, command, context) {
+    const matches = tasks.filter((task) => normalize(task.text).includes(command.query || command.noteQuery));
     function display(task) {
       if (context !== connection.state.context) return;
       clearResult();
+      if (command.query) {
+        if (task.completed === command.completed) {
+          response.textContent = `“${task.text}” já está ${task.completed ? "concluída" : "pendente"}.`;
+          return;
+        }
+        draft = { task, completed: command.completed, context };
+        response.textContent = `${command.completed ? "Concluir" : "Reabrir"} “${task.text}”${task.due_at ? ` (${formatDate(task.due_at)})` : ""}?`;
+        confirm.textContent = command.completed ? "Confirmar conclusão" : "Confirmar reabertura";
+        confirm.hidden = false;
+        return;
+      }
       response.textContent = task.notes?.trim()
         ? `Anotação de “${task.text}”` : `“${task.text}” ainda não tem anotação.`;
       previewNotes.textContent = task.notes || "";
@@ -120,7 +138,7 @@
       response.textContent = "Nenhuma tarefa encontrada com esse nome.";
       return;
     }
-    response.textContent = "Qual destas tarefas você quer consultar?";
+    response.textContent = "Qual destas tarefas?";
     for (const task of matches) {
       const button = document.createElement("button");
       button.type = "button";
@@ -176,6 +194,7 @@
       if (mode === "signed-out") throw new Error("Entre na sua conta para usar o assistente.");
       if (command.task) {
         draft = { task: command.task, context };
+        confirm.textContent = "Confirmar criação";
         response.textContent = `Criar “${draft.task.text}” ${draft.task.due_at ? `para ${formatDate(draft.task.due_at)}` : "sem data marcada"}?`;
         if (draft.task.notes) {
           previewNotes.textContent = `Anotação: ${draft.task.notes}`;
@@ -186,7 +205,7 @@
       }
       const data = await window.listActions.run(() => connection.request("/api/tasks", { expectedContext: context }));
       if (context !== connection.state.context) return;
-      if (command.noteQuery) showNotes(data.tasks, command.noteQuery, context);
+      if (command.query || command.noteQuery) selectTask(data.tasks, command, context);
       else showTasks(data.tasks, command.view);
     } catch (error) {
       response.textContent = error.message;
@@ -197,16 +216,17 @@
 
   confirm.addEventListener("click", async () => {
     if (!draft || busy) return;
-    const { task, context } = draft;
+    const { task, completed, context } = draft;
+    const creating = completed === undefined;
     clearResult();
     setBusy(true);
     try {
-      await window.listActions.run(() => connection.request("/api/tasks", {
-        method: "POST", body: JSON.stringify(task), expectedContext: context,
+      await window.listActions.run(() => connection.request(creating ? "/api/tasks" : `/api/tasks/${encodeURIComponent(task.id)}`, {
+        method: creating ? "POST" : "PATCH", body: JSON.stringify(creating ? task : { completed }), expectedContext: context,
       }));
       if (context === connection.state.context) {
         input.value = "";
-        response.textContent = `Tarefa “${task.text}” criada.`;
+        response.textContent = `Tarefa “${task.text}” ${creating ? "criada" : completed ? "concluída" : "reaberta"}.`;
         window.listActions.refresh();
       }
     } catch (error) {
