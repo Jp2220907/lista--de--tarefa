@@ -25,6 +25,7 @@ FILES = {'/': ('index.html', 'text/html; charset=utf-8'),
          '/vendor/supabase.js': ('vendor/supabase.js', 'text/javascript; charset=utf-8'),
          '/cloud-config.json': ('cloud-config.json', 'application/json; charset=utf-8'),
          '/manifest.webmanifest': ('manifest.webmanifest', 'application/manifest+json'),
+         '/icons/assistant-robot.png': ('icons/assistant-robot.png', 'image/png'),
          '/icons/icon-192.png': ('icons/icon-192.png', 'image/png'),
          '/icons/icon-512.png': ('icons/icon-512.png', 'image/png')}
 

@@ -1,8 +1,8 @@
 "use strict";
 importScripts("/push-state.js");
 // Somente o shell público. Nenhuma resposta Auth/REST/API nem dado pessoal é cacheado.
-const CACHE = "minha-lista-shell-v7";
-const ASSETS = ["/", "/index.html", "/styles.css", "/app.js", "/assistant.js", "/connection.js", "/account-ui.js", "/calendar.js", "/notifications.js", "/push-state.js", "/recuperar-senha.html", "/recovery.js", "/cloud-config.json", "/vendor/supabase.js", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
+const CACHE = "minha-lista-shell-v8";
+const ASSETS = ["/", "/index.html", "/styles.css", "/app.js", "/assistant.js", "/connection.js", "/account-ui.js", "/calendar.js", "/notifications.js", "/push-state.js", "/recuperar-senha.html", "/recovery.js", "/cloud-config.json", "/vendor/supabase.js", "/manifest.webmanifest", "/icons/assistant-robot.png", "/icons/icon-192.png", "/icons/icon-512.png"];
 self.addEventListener("install", (event) => { event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS))); });
 self.addEventListener("activate", (event) => {
   event.waitUntil(caches.keys().then((names) => Promise.all(names.filter((name) => name.startsWith("minha-lista-shell-") && name !== CACHE).map((name) => caches.delete(name)))).then(() => self.clients.claim()));
