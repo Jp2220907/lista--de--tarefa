@@ -270,7 +270,7 @@ dialog .error-message { margin-top: 16px; }
   background: radial-gradient(circle at 35% 24%, #fff 10%, #e7f2eb 62%, #caddd0);
   box-shadow: inset 0 0 0 2px #ffffffad, 0 4px 14px #173e2c38;
 }
-#assistant-button img { display: block; object-fit: contain; }
+#assistant-button img { display: block; object-fit: contain; image-rendering: pixelated; }
 #assistant-button:focus-visible { outline: 3px solid #193c32; outline-offset: 3px; }
 @media (hover: hover) {
   #assistant-button:hover { border-color: var(--green); }

@@ -13,7 +13,7 @@ FILES = (
     "atualizar.py", "tests/test_update.py", "cloud.py", "tests/test_cloud.py",
     "tests/fake_supabase.py", "static/cloud-config.json", "static/connection.js",
     "static/account-ui.js", "static/vendor/supabase.js", "static/manifest.webmanifest",
-    "static/sw.js", "static/icons/assistant-robot-green.png", "static/icons/icon-192.png", "static/icons/icon-512.png", "static/_headers",
+    "static/sw.js", "static/icons/assistant-robot-pixel.png", "static/icons/icon-192.png", "static/icons/icon-512.png", "static/_headers",
     "supabase/LOGIN_E_SINCRONIZACAO.md", "SINCRONIZAR_COM_HERMES.txt",
     "static/recuperar-senha.html", "static/recovery.js",
     "static/calendar.js", "static/assistant.js", "static/notifications.js", "static/push-state.js",
